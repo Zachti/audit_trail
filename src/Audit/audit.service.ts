@@ -54,7 +54,7 @@ export class AuditService {
         if (error) {
             this.logger.error(`Failed to save audit event: ${error.message}`);
         }
-         await this.auditStorageService.toQueue(event);
+         await this.auditStorageService.addToBuffer(event);
     }
 }
 
