@@ -1,0 +1,20 @@
+{
+  "name": "@zachtirosh/audit_trail",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@nestjs/bull": "^0.6.3",
+    "@nestjs/cli": "^9.5.0",
+    "@nestjs/config": "^2.3.2",
+    "@nestjs/schedule": "^2.2.2",
+    "bull": "^4.10.4",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0"
+  }
+}
