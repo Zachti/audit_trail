@@ -25,7 +25,7 @@ export interface AuditModuleAsyncOptions
 export interface AuditOptions extends AuditModuleOptions {
     database: string
     bufferSize? : number
-    apm: APM
+    apm?: APM
     credentials: Record<string, string | number>
 }
 

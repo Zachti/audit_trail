@@ -26,12 +26,14 @@ export class AuditService implements OnModuleInit, OnModuleDestroy {
         try {
             await this.auditStorageService.addToBuffer(event);
         } catch (error) {
-            this.logger.error(`Audit Error: ${error.toString()}`);
             await this.handleError(error, event);
         }
     }
 
     async onModuleInit(): Promise<void> {
+        if (!this.areShutdownHooksEnabled) {
+            throw new Error('Shutdown hooks are not enabled. Please call app.enableShutdownHooks() in your application.');
+        }
         this.logger.log('AuditService module initialized');
         await this.eventRepository.connect(this.options.credentials)
         await this.eventRepository.validateConnection()
@@ -54,19 +56,23 @@ export class AuditService implements OnModuleInit, OnModuleDestroy {
         const errors = await validate(event);
 
         if (errors.length > 0) {
-            const errorMessages = errors.map((error) => Object.values(error.constraints)).flat();
-            errorMessages.forEach((error, index) => {
-                this.logger.error(`Audit Error ${index + 1}: ${error.toString()}`);
-            });
-            await this.handleError(null, event);
+            await this.handleError(errors, event);
         }
     }
 
-    private async handleError(error: any, event: Event) {
-        if (error) {
-            this.logger.error(`Failed to save audit event: ${error.message}`);
+    private async handleError(errors: any[], event: Event) {
+        const errorMessages = errors.map((error) => Object.values(error.constraints)).flat();
+        errorMessages.forEach((error, index) => {
+            this.logger.error(`Audit Error ${index + 1}: ${error.toString()}`);
+        });
+        if (this.options.apm) {
+                await this.options.apm.captureError(errors)
         }
          await this.auditStorageService.addToBuffer(event);
+    }
+
+    private areShutdownHooksEnabled(): boolean {
+        return Boolean(process.listeners('SIGINT').length || process.listeners('SIGTERM').length);
     }
 }
 

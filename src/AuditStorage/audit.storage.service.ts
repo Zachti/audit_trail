@@ -21,7 +21,7 @@ export class AuditStorageService {
         private readonly bufferSize: number,
     ) {
         this.bufferSize = options.bufferSize || 1000;
-        this.logger = options.logger || new Logger(AuditStorageService.name);
+        this.logger = options.logger ?? new Logger(AuditStorageService.name);
     }
 
     async addToBuffer(event: Event): Promise<void> {
@@ -35,35 +35,44 @@ export class AuditStorageService {
     }
 
     async handleModuleDestroy() {
-        if (this.buffer.length > 0) {
+        if (this.buffer.length > 0) { // if there is events in the buffer , save them into the queue before process shut down.
             this.logger.debug(`Module destroyed. saving all the ${this.buffer.length} remaining events in the buffer.`)
             await this.toQueue(this.buffer);
         }
     }
 
     private async toQueue(events: Event[]): Promise<void> {
-        await this.auditQueue.addBulk(events.map((event) => ({ name: 'saveEvent', data: event })));
+        // add all the buffer to the queue.
+        await this.auditQueue.addBulk(events.map((event) => ({name: 'saveEvent', data: event})));
     }
 
     private async saveEvent(event: Event): Promise<void> {
+        // try to save event from the queue to the database.
         try {
             await this.eventRepository.save(event);
         } catch (error) {
-            this.logger.error(`Failed to save audit event: ${error.message}`);
-            await this.addToBuffer(event); // Add the event to the queue for later retransmission processing
+            await this.handleError(error , event)
         }
     }
 
     private async getAllEvents(): Promise<Event[]> {
+        // get all events from the queue
         const jobs = await this.auditQueue.getJobs(jobTypes);
         return jobs.map((job) => job.data as Event);
     }
 
     @Interval(5000) // Interval in milliseconds
     private async saveQueuedEvents(): Promise<void> {
-        const events = await this.getAllEvents(); // Create a copy of the buffer to avoid mutation issues
+        const events = await this.getAllEvents(); // get all the events from the queue.
         await this.auditQueue.empty(); // Clear the queue after extracting all the jobs
-
         await Promise.all(events.map((event) => this.saveEvent(event)));
+    }
+
+    private async handleError(error: any, event: Event) {
+        this.logger.error(`Failed to save audit event: ${error.message}`);
+        if (this.options.apm) {
+            await this.options.apm.captureError(error)
+        }
+        await this.addToBuffer(event); // Add the event to the queue for later retransmission processing
     }
 }
