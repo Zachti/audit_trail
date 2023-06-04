@@ -34,6 +34,13 @@ export class AuditStorageService {
         }
     }
 
+    async handleModuleDestroy() {
+        if (this.buffer.length > 0) {
+            this.logger.debug(`Module destroyed. saving all the ${this.buffer.length} remaining events in the buffer.`)
+            await this.toQueue(this.buffer);
+        }
+    }
+
     private async toQueue(events: Event[]): Promise<void> {
         await this.auditQueue.addBulk(events.map((event) => ({ name: 'saveEvent', data: event })));
     }

@@ -1,13 +1,22 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuditStorageService } from './audit.storage.service';
-import { AuditQueueModule } from '../AuditQueue/audit.queue.module';
+
 
 @Module({
     imports: [
-        ScheduleModule.forRoot(), // Import the ScheduleModule for scheduling tasks
-        AuditQueueModule, // Import the AuditQueueModule
+        BullModule.registerQueue({
+            name: 'audit',
+        }),
+        ScheduleModule.forRoot(),
     ],
-    providers: [AuditStorageService],
+    providers: [
+        {
+            provide: AuditStorageService,
+            useClass: AuditStorageService,
+        },
+    ],
+    exports: [AuditStorageService],
 })
 export class AuditStorageModule {}

@@ -1,5 +1,9 @@
 import {Logger, ModuleMetadata, Type} from "@nestjs/common";
 
+export interface APM {
+    captureError(error: unknown): Promise<void>
+}
+
 export interface AuditModuleOptions {
     debug?: boolean
     logger?: Logger
@@ -21,6 +25,8 @@ export interface AuditModuleAsyncOptions
 export interface AuditOptions extends AuditModuleOptions {
     database: string
     bufferSize? : number
+    apm: APM
+    credentials: Record<string, string | number>
 }
 
 export const AUDIT_OPTIONS = 'AUDIT_OPTIONS'

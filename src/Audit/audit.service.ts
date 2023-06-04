@@ -1,4 +1,4 @@
-import {Inject, Injectable, Logger} from '@nestjs/common';
+import {Inject, Injectable, Logger , OnModuleInit , OnModuleDestroy} from '@nestjs/common';
 import {Event_Repository, EventRepository} from '../Event/event.repository';
 import {validate} from 'class-validator';
 import {Event} from '../Event/event.entity';
@@ -9,7 +9,7 @@ import { AUDIT_OPTIONS , AuditOptions } from './audit.interfaces';
 
 
 @Injectable()
-export class AuditService {
+export class AuditService implements OnModuleInit, OnModuleDestroy {
     private readonly logger: Logger;
     constructor(
         @Inject(AUDIT_OPTIONS) private options: AuditOptions,
@@ -19,15 +19,27 @@ export class AuditService {
         this.logger = options.logger || new Logger(AuditService.name);
     }
 
-    async createNewAudit(transactionData: TransactionData): Promise<Event> {
+    async createNewAudit(transactionData: TransactionData): Promise<void> {
         const event = await this.toEvent(transactionData);
         event.timestamp = new Date().toString();
         await this.validateEvent(event);
         try {
-            return await this.eventRepository.save(event);
+            await this.auditStorageService.addToBuffer(event);
         } catch (error) {
+            this.logger.error(`Audit Error: ${error.toString()}`);
             await this.handleError(error, event);
         }
+    }
+
+    async onModuleInit(): Promise<void> {
+        this.logger.log('AuditService module initialized');
+        await this.eventRepository.connect(this.options.credentials)
+        await this.eventRepository.validateConnection()
+    }
+
+    async onModuleDestroy(): Promise<void> {
+        await this.auditStorageService.handleModuleDestroy()
+        await this.eventRepository.closeConnection()
     }
 
     private toEvent(transactionData: TransactionData): Event {
