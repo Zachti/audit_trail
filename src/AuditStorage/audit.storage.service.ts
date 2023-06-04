@@ -6,7 +6,7 @@ import { Interval } from '@nestjs/schedule';
 import {Event_Repository, EventRepository} from '../Event/event.repository';
 import { AUDIT_OPTIONS, AuditOptions } from '../Audit/audit.interfaces';
 
-const jobTypes: JobStatus[] = ['waiting', 'active', 'delayed', 'paused', 'failed', 'completed'];
+const jobTypes: JobStatus[] = ['waiting', 'active', 'delayed', 'paused', 'failed'];
 
 
 @Injectable()
@@ -47,32 +47,28 @@ export class AuditStorageService {
     }
 
     private async saveEvent(event: Event): Promise<void> {
-        // try to save event from the queue to the database.
-        try {
             await this.eventRepository.save(event);
-        } catch (error) {
-            await this.handleError(error , event)
-        }
-    }
-
-    private async getAllEvents(): Promise<Event[]> {
-        // get all events from the queue
-        const jobs = await this.auditQueue.getJobs(jobTypes);
-        return jobs.map((job) => job.data as Event);
     }
 
     @Interval(5000) // Interval in milliseconds
     private async saveQueuedEvents(): Promise<void> {
-        const events = await this.getAllEvents(); // get all the events from the queue.
-        await this.auditQueue.empty(); // Clear the queue after extracting all the jobs
-        await Promise.all(events.map((event) => this.saveEvent(event)));
+        // Retrieve and process events from the audit queue
+        const jobs = await this.auditQueue.getJobs(jobTypes);
+        await Promise.all(jobs.map((job) => {
+            try {
+                this.saveEvent(job.data);
+                job.moveToCompleted(); // Mark the job as completed
+            } catch (error) {
+                job.moveToFailed({ message: error.message }); // Mark the job as failed
+                this.handleError(error);
+            }
+        }));
     }
 
-    private async handleError(error: any, event: Event) {
+    private async handleError(error: any) {
         this.logger.error(`Failed to save audit event: ${error.message}`);
         if (this.options.apm) {
-            await this.options.apm.captureError(error)
+            await this.options.apm.captureError(error);
         }
-        await this.addToBuffer(event); // Add the event to the queue for later retransmission processing
     }
 }

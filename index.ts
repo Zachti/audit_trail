@@ -1,4 +1,4 @@
-import {AuditService} from './src/Audit/audit.service';
-import {AuditModule} from './src/Audit/audit.module';
+export * from './src/Audit/audit.service';
+export * from './src/Audit/audit.module';
+export * from './src/Audit/audit.interfaces';
 
-export {AuditService , AuditModule};
