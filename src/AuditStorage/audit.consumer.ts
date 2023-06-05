@@ -1,37 +1,31 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue , Worker } from 'bullmq';
+import { InjectQueue, OnQueueFailed, Process, Processor } from '@nestjs/bull';
+import { Job, Queue } from 'bullmq';
 import { Event } from '../Event/event.entity';
-import { Event_Repository, EventRepository } from '../Event/event.repository';
-import { AUDIT_OPTIONS, AuditOptions } from '../Audit/audit.interfaces';
+import { EventRepository } from '../Event/event.repository';
+import { AuditOptions } from '../Audit/audit.interfaces';
+import { AUDIT_OPTIONS, AUDIT_QUEUE , EVENT_REPOSITORY  } from '../Types/constants';
 
+@Processor(AUDIT_QUEUE)
 @Injectable()
-export class AuditStorageService {
+export class AuditConsumer {
   private readonly logger: Logger;
   private buffer: Event[] = []; // Buffer to store events
+  private readonly bufferSize: number;
 
   constructor(
     @Inject(AUDIT_OPTIONS) private options: AuditOptions,
-    @Inject(Event_Repository) private eventRepository: EventRepository,
-    @InjectQueue('audit') private readonly auditQueue: Queue,
-    private readonly auditQueueWorker: Worker,
-    private readonly bufferSize: number,
+    @Inject(EVENT_REPOSITORY) private eventRepository: EventRepository,
+    @InjectQueue(AUDIT_QUEUE) private readonly auditQueue: Queue,
   ) {
     this.bufferSize = options.bufferSize ?? 1000;
-    this.logger = options.logger ?? new Logger(AuditStorageService.name);
-    this.auditQueue =  new Queue('auditQueue' ,  {defaultJobOptions: {
-      backoff: {
-        type: 'fixed',
-        delay: options.interval ?? 5000, // Delay in milliseconds between each retry attempt
-      }},
-    });
-    this.auditQueueWorker = new Worker('auditQueue', async job => {
-      try {
-        return await this.eventRepository.save(job.data);
-      } catch (e) {
-        await this.handleError(e)
-      }
-    })
+    this.logger = options.logger ?? new Logger(AuditConsumer.name);
+  }
+
+
+  @Process('*')
+  private async saveJob(job: Job) {
+    await this.eventRepository.save(job.data);
   }
 
   async addToBuffer(event: Event): Promise<void> {
@@ -57,10 +51,11 @@ export class AuditStorageService {
   private async toQueue(events: Event[]): Promise<void> {
     // add all the buffer to the queue.
     await this.auditQueue.addBulk(
-      events.map((event) => ({ name: 'saveEvent', data: event  , attempts: -1, })),
+      events.map((event) => ({ name: 'saveEvent', data: event, attempts: -1, })),
     );
   }
 
+  @OnQueueFailed()
   private async handleError(error: any) {
     this.logger.error(`Failed to save audit event: ${error.message}`);
     if (this.options.apm) {
