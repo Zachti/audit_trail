@@ -20,7 +20,7 @@ export class AuditStorageService {
     this.bufferSize = options.bufferSize ?? 1000;
     this.logger = options.logger ?? new Logger(AuditStorageService.name);
     this.auditQueue =  new Queue('auditQueue');
-    this.auditQueueWorker = new Worker('AsyncSaveToRepository', async job => {
+    this.auditQueueWorker = new Worker('auditQueue', async job => {
       try {
         return await this.eventRepository.save(job.data);
       } catch (e) {

@@ -37,7 +37,9 @@ export class AuditService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     if (!this.areShutdownHooksEnabled) {
-      throw new Error('Shutdown hooks are not enabled. Please call app.enableShutdownHooks() in your application.',);
+      throw new Error(
+        'Shutdown hooks are not enabled. Please call app.enableShutdownHooks() in your application.',
+      );
     }
     this.logger.log('AuditService module initialized');
     await this.eventRepository.connect(this.options.credentials);

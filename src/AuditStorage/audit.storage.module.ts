@@ -11,8 +11,10 @@ const connection = {
   imports: [
     BullModule.registerQueue({
       name: 'audit',
-      redis: connection,
     }),
+    BullModule.forRoot({
+      redis: connection,
+    })
   ],
   providers: [
     {
