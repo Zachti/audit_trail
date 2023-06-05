@@ -1,11 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { AuditStorageService } from './audit.storage.service';
-
-const connection = {
-  host: 'localhost',
-  port: 6379,
-}
+import { redisConnection } from '../Types/objects';
 
 @Module({
   imports: [
@@ -13,7 +9,7 @@ const connection = {
       name: 'audit',
     }),
     BullModule.forRoot({
-      redis: connection,
+      redis: redisConnection,
     })
   ],
   providers: [

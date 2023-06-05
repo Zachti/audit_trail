@@ -5,6 +5,7 @@ import {
   AUDIT_OPTIONS,
   AuditModuleAsyncOptions,
 } from './audit.interfaces';
+import { AuditStorageService } from '../AuditStorage/audit.storage.service';
 
 @Module({})
 export class AuditModule {
@@ -17,8 +18,9 @@ export class AuditModule {
           useValue: options,
         },
         AuditService,
+        AuditStorageService,
       ],
-      exports: [AuditService],
+      exports: [AuditService , AuditStorageService],
     };
   }
 
@@ -28,8 +30,8 @@ export class AuditModule {
     return {
       module: AuditModule,
       imports: options.imports,
-      providers: [...asyncProviders, AuditService],
-      exports: [AuditService],
+      providers: [...asyncProviders, AuditService , AuditStorageService],
+      exports: [AuditService , AuditStorageService],
     };
   }
 

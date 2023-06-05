@@ -29,6 +29,7 @@ export interface AuditOptions extends AuditModuleOptions {
   credentials: Record<string, string | number>;
   bufferSize?: number;
   apm?: APM;
+  interval?: number;
 }
 
 export const AUDIT_OPTIONS = 'AUDIT_OPTIONS';
