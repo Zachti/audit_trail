@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { BullModule, BullModuleAsyncOptions } from '@nestjs/bull';
+import { BullModule, BullModuleAsyncOptions, SharedBullAsyncConfiguration } from '@nestjs/bull';
 import { AuditConsumer } from './audit.consumer';
-import { AUDIT_OPTIONS, redisConnection , AUDIT_QUEUE } from '../Types/constants';
+import { ConfigService } from '@nestjs/config';
+import { AUDIT_OPTIONS , AUDIT_QUEUE } from '../Types/constants';
 import {AuditOptions } from '../Audit/audit.interfaces';
 
 @Module({
@@ -18,11 +19,13 @@ import {AuditOptions } from '../Audit/audit.interfaces';
           removeOnFail: false
         }
       }) ,
-      inject: [AUDIT_OPTIONS],
     } as BullModuleAsyncOptions),
-    BullModule.forRoot({
-      redis: redisConnection,
-    }),
+    BullModule.forRootAsync({
+      useFactory: async (configService: ConfigService) => ({
+        redis: configService.get('REDIS_CONNECTION'),
+      }),
+      inject: [AUDIT_OPTIONS , ConfigService]
+    } as SharedBullAsyncConfiguration),
   ],
 
   providers: [
