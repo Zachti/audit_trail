@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
-import { ScheduleModule } from '@nestjs/schedule';
 import { AuditStorageService } from './audit.storage.service';
 
 const connection = {
@@ -14,7 +13,6 @@ const connection = {
       name: 'audit',
       redis: connection,
     }),
-    ScheduleModule.forRoot(),
   ],
   providers: [
     {
