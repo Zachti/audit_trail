@@ -1,74 +1,65 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { JobStatus, Queue } from 'bull';
+import { Queue , Worker } from 'bullmq';
 import { Event } from '../Event/event.entity';
-import { Interval } from '@nestjs/schedule';
-import {Event_Repository, EventRepository} from '../Event/event.repository';
+import { Event_Repository, EventRepository } from '../Event/event.repository';
 import { AUDIT_OPTIONS, AuditOptions } from '../Audit/audit.interfaces';
-
-const jobTypes: JobStatus[] = ['waiting', 'active', 'delayed', 'paused', 'failed'];
-
 
 @Injectable()
 export class AuditStorageService {
-    private readonly logger: Logger;
-    private buffer: Event[] = []; // Buffer to store events
+  private readonly logger: Logger;
+  private buffer: Event[] = []; // Buffer to store events
 
-    constructor(
-        @Inject(AUDIT_OPTIONS) private options: AuditOptions,
-        @Inject(Event_Repository) private eventRepository: EventRepository,
-        @InjectQueue('audit') private readonly auditQueue: Queue,
-        private readonly bufferSize: number,
-    ) {
-        this.bufferSize = options.bufferSize || 1000;
-        this.logger = options.logger ?? new Logger(AuditStorageService.name);
+  constructor(
+    @Inject(AUDIT_OPTIONS) private options: AuditOptions,
+    @Inject(Event_Repository) private eventRepository: EventRepository,
+    @InjectQueue('audit') private readonly auditQueue: Queue,
+    private readonly auditQueueWorker: Worker,
+    private readonly bufferSize: number,
+  ) {
+    this.bufferSize = options.bufferSize ?? 1000;
+    this.logger = options.logger ?? new Logger(AuditStorageService.name);
+    this.auditQueue =  new Queue('auditQueue');
+    this.auditQueueWorker = new Worker('AsyncSaveToRepository', async job => {
+      try {
+        return await this.eventRepository.save(job.data);
+      } catch (e) {
+        await this.handleError(e)
+      }
+    })
+  }
+
+  async addToBuffer(event: Event): Promise<void> {
+    this.buffer.push(event);
+
+    // If buffer size exceeds the specified size, save the buffered events
+    if (this.buffer.length >= this.bufferSize) {
+      await this.toQueue(this.buffer);
+      this.buffer = []; // Clear the buffer after saving
     }
+  }
 
-    async addToBuffer(event: Event): Promise<void> {
-        this.buffer.push(event);
-
-        // If buffer size exceeds the specified size, save the buffered events
-        if (this.buffer.length >= this.bufferSize) {
-            await this.toQueue(this.buffer);
-            this.buffer = []; // Clear the buffer after saving
-        }
+  async handleModuleDestroy() {
+    if (this.buffer.length > 0) {
+      // if there is events in the buffer , save them into the queue before process shut down.
+      this.logger.debug(
+        `Module destroyed. saving all the ${this.buffer.length} remaining events in the buffer.`,
+      );
+      await this.toQueue(this.buffer);
     }
+  }
 
-    async handleModuleDestroy() {
-        if (this.buffer.length > 0) { // if there is events in the buffer , save them into the queue before process shut down.
-            this.logger.debug(`Module destroyed. saving all the ${this.buffer.length} remaining events in the buffer.`)
-            await this.toQueue(this.buffer);
-        }
-    }
+  private async toQueue(events: Event[]): Promise<void> {
+    // add all the buffer to the queue.
+    await this.auditQueue.addBulk(
+      events.map((event) => ({ name: 'saveEvent', data: event })),
+    );
+  }
 
-    private async toQueue(events: Event[]): Promise<void> {
-        // add all the buffer to the queue.
-        await this.auditQueue.addBulk(events.map((event) => ({name: 'saveEvent', data: event})));
+  private async handleError(error: any) {
+    this.logger.error(`Failed to save audit event: ${error.message}`);
+    if (this.options.apm) {
+      await this.options.apm.captureError(error);
     }
-
-    private async saveEvent(event: Event): Promise<void> {
-            await this.eventRepository.save(event);
-    }
-
-    @Interval(5000) // Interval in milliseconds
-    private async saveQueuedEvents(): Promise<void> {
-        // Retrieve and process events from the audit queue
-        const jobs = await this.auditQueue.getJobs(jobTypes);
-        await Promise.all(jobs.map((job) => {
-            try {
-                this.saveEvent(job.data);
-                job.moveToCompleted(); // Mark the job as completed
-            } catch (error) {
-                job.moveToFailed({ message: error.message }); // Mark the job as failed
-                this.handleError(error);
-            }
-        }));
-    }
-
-    private async handleError(error: any) {
-        this.logger.error(`Failed to save audit event: ${error.message}`);
-        if (this.options.apm) {
-            await this.options.apm.captureError(error);
-        }
-    }
+  }
 }
