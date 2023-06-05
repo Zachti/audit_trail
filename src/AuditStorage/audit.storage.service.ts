@@ -19,7 +19,12 @@ export class AuditStorageService {
   ) {
     this.bufferSize = options.bufferSize ?? 1000;
     this.logger = options.logger ?? new Logger(AuditStorageService.name);
-    this.auditQueue =  new Queue('auditQueue');
+    this.auditQueue =  new Queue('auditQueue' ,  {defaultJobOptions: {
+      backoff: {
+        type: 'fixed',
+        delay: options.interval ?? 5000, // Delay in milliseconds between each retry attempt
+      }},
+    });
     this.auditQueueWorker = new Worker('auditQueue', async job => {
       try {
         return await this.eventRepository.save(job.data);
@@ -52,7 +57,7 @@ export class AuditStorageService {
   private async toQueue(events: Event[]): Promise<void> {
     // add all the buffer to the queue.
     await this.auditQueue.addBulk(
-      events.map((event) => ({ name: 'saveEvent', data: event })),
+      events.map((event) => ({ name: 'saveEvent', data: event  , attempts: -1, })),
     );
   }
 
