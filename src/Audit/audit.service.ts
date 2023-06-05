@@ -16,10 +16,10 @@ import { AUDIT_OPTIONS, AuditOptions } from './audit.interfaces';
 @Injectable()
 export class AuditService implements OnModuleInit, OnModuleDestroy {
   private readonly logger: Logger;
+  private readonly auditStorageService: AuditStorageService;
   constructor(
     @Inject(AUDIT_OPTIONS) private options: AuditOptions,
     @Inject(Event_Repository) private eventRepository: EventRepository,
-    private readonly auditStorageService: AuditStorageService,
   ) {
     this.logger = options.logger || new Logger(AuditService.name);
   }
