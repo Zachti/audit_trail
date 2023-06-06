@@ -4,7 +4,7 @@ import {
   AuditOptions,
   AuditModuleAsyncOptions,
 } from './audit.interfaces';
-import { AuditConsumer } from '../AuditStorage/audit.consumer';
+import { AuditConsumer } from '../AuditConsumer/audit.consumer';
 import { AUDIT_OPTIONS } from '../Types/constants';
 
 @Module({})
