@@ -9,5 +9,3 @@ export interface EventRepository {
   validateConnection(): Promise<void>;
   closeConnection(): Promise<void>;
 }
-
-export const Event_Repository = 'EventRepository';

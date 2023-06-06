@@ -5,23 +5,24 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { Event_Repository, EventRepository } from '../Event/event.repository';
+import { EventRepository } from '../Event/event.repository';
 import { validate } from 'class-validator';
 import { Event } from '../Event/event.entity';
-import { AuditStorageService } from '../AuditStorage/audit.storage.service';
+import { AuditConsumer } from '../AuditStorage/audit.consumer';
 import { TransactionData } from '../Types/transactionData.interface';
 import { v4 as uuidv4 } from 'uuid';
-import { AUDIT_OPTIONS, AuditOptions } from './audit.interfaces';
+import {AuditOptions } from './audit.interfaces';
+import { EVENT_REPOSITORY, AUDIT_OPTIONS, AUDIT_CONSUMER } from '../Types/constants';
 
 @Injectable()
 export class AuditService implements OnModuleInit, OnModuleDestroy {
   private readonly logger: Logger;
-  private readonly auditStorageService: AuditStorageService;
   constructor(
     @Inject(AUDIT_OPTIONS) private options: AuditOptions,
-    @Inject(Event_Repository) private eventRepository: EventRepository,
-  ) {
-    this.logger = options.logger || new Logger(AuditService.name);
+    @Inject(EVENT_REPOSITORY) private eventRepository: EventRepository,
+    @Inject(AUDIT_CONSUMER)private readonly auditConsumer: AuditConsumer,
+) {
+    this.logger = options.logger ?? new Logger(AuditService.name);
   }
 
   async createNewAudit(transactionData: TransactionData): Promise<void> {
@@ -29,7 +30,7 @@ export class AuditService implements OnModuleInit, OnModuleDestroy {
     event.timestamp = new Date().toString();
     await this.validateEvent(event);
     try {
-      await this.auditStorageService.addToBuffer(event);
+      await this.auditConsumer.addToBuffer(event);
     } catch (error) {
       await this.handleError(error, event);
     }
@@ -47,7 +48,7 @@ export class AuditService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.auditStorageService.handleModuleDestroy();
+    await this.auditConsumer.handleModuleDestroy();
     await this.eventRepository.closeConnection();
   }
 
@@ -78,7 +79,7 @@ export class AuditService implements OnModuleInit, OnModuleDestroy {
     if (this.options.apm) {
       await this.options.apm.captureError(errors);
     }
-    await this.auditStorageService.addToBuffer(event);
+    await this.auditConsumer.addToBuffer(event);
   }
 
   private areShutdownHooksEnabled(): boolean {

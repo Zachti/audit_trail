@@ -32,4 +32,3 @@ export interface AuditOptions extends AuditModuleOptions {
   interval?: number;
 }
 
-export const AUDIT_OPTIONS = 'AUDIT_OPTIONS';

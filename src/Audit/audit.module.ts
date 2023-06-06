@@ -2,10 +2,10 @@ import { Module, DynamicModule, Provider } from '@nestjs/common';
 import { AuditService } from './audit.service';
 import {
   AuditOptions,
-  AUDIT_OPTIONS,
   AuditModuleAsyncOptions,
 } from './audit.interfaces';
-import { AuditStorageService } from '../AuditStorage/audit.storage.service';
+import { AuditConsumer } from '../AuditStorage/audit.consumer';
+import { AUDIT_OPTIONS } from '../Types/constants';
 
 @Module({})
 export class AuditModule {
@@ -18,9 +18,9 @@ export class AuditModule {
           useValue: options,
         },
         AuditService,
-        AuditStorageService,
+        AuditConsumer,
       ],
-      exports: [AuditService , AuditStorageService],
+      exports: [AuditService , AuditConsumer],
     };
   }
 
@@ -30,8 +30,8 @@ export class AuditModule {
     return {
       module: AuditModule,
       imports: options.imports,
-      providers: [...asyncProviders, AuditService , AuditStorageService],
-      exports: [AuditService , AuditStorageService],
+      providers: [...asyncProviders, AuditService , AuditConsumer],
+      exports: [AuditService , AuditConsumer],
     };
   }
 
