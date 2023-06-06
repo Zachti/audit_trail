@@ -8,6 +8,7 @@ import {AuditOptions } from '../Audit/audit.interfaces';
 @Module({
   imports: [
     BullModule.registerQueueAsync({
+      inject: [AUDIT_OPTIONS],
       name: AUDIT_QUEUE,
       useFactory: async (options: AuditOptions) => ({
         defaultJobOptions: {
@@ -21,8 +22,8 @@ import {AuditOptions } from '../Audit/audit.interfaces';
       }) ,
     } as BullModuleAsyncOptions),
     BullModule.forRootAsync({
-      useFactory: async (configService: ConfigService) => ({
-        redis: configService.get('REDIS_CONNECTION'),
+      useFactory: async (configService: ConfigService , options: AuditOptions) => ({
+        redis: options.redis ?? configService.get('REDIS_CONNECTION'),
       }),
       inject: [AUDIT_OPTIONS , ConfigService]
     } as SharedBullAsyncConfiguration),
