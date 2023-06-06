@@ -20,7 +20,7 @@ export class AuditService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(AUDIT_OPTIONS) private options: AuditOptions,
     @Inject(EVENT_REPOSITORY) private eventRepository: EventRepository,
-   private readonly auditConsumer: AuditConsumer,
+     private readonly auditConsumer: AuditConsumer,
 ) {
     this.logger = options.logger ?? new Logger(AuditService.name);
   }

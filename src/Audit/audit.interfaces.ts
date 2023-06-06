@@ -1,5 +1,6 @@
 import { Logger, ModuleMetadata, Type } from '@nestjs/common';
 import { RedisOpts } from '../Types/objects';
+import { EventRepository } from '../Event/event.repository';
 
 export interface APM {
   captureError(error: unknown): Promise<void>;
@@ -26,7 +27,7 @@ export interface AuditModuleAsyncOptions
 }
 
 export interface AuditOptions extends AuditModuleOptions {
-  database: string;
+  database: EventRepository;
   credentials: Record<string, string | number>;
   bufferSize?: number;
   apm?: APM;

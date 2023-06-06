@@ -5,7 +5,7 @@ import {
   AuditModuleAsyncOptions,
 } from './audit.interfaces';
 import { AuditConsumer } from '../AuditConsumer/audit.consumer';
-import { AUDIT_OPTIONS } from '../Types/constants';
+import { AUDIT_OPTIONS, EVENT_REPOSITORY } from '../Types/constants';
 
 @Module({})
 export class AuditModule {
@@ -16,6 +16,10 @@ export class AuditModule {
         {
           provide: AUDIT_OPTIONS,
           useValue: options,
+        },
+        {
+          provide: EVENT_REPOSITORY,
+          useValue: options.database,
         },
         AuditService,
         AuditConsumer,
