@@ -1,4 +1,5 @@
 import { Logger, ModuleMetadata, Type } from '@nestjs/common';
+import { RedisOpts } from '../Types/objects';
 
 export interface APM {
   captureError(error: unknown): Promise<void>;
@@ -30,5 +31,6 @@ export interface AuditOptions extends AuditModuleOptions {
   bufferSize?: number;
   apm?: APM;
   interval?: number;
+  redis?: RedisOpts;
 }
 

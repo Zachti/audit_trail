@@ -8,7 +8,7 @@ import {
 import { EventRepository } from '../Event/event.repository';
 import { validate } from 'class-validator';
 import { Event } from '../Event/event.entity';
-import { AuditConsumer } from '../AuditStorage/audit.consumer';
+import { AuditConsumer } from '../AuditConsumer/audit.consumer';
 import { TransactionData } from '../Types/transactionData.interface';
 import { v4 as uuidv4 } from 'uuid';
 import {AuditOptions } from './audit.interfaces';

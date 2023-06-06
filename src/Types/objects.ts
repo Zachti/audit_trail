@@ -4,6 +4,13 @@ export interface ActionType {
   metadata: Record<string, string | number | boolean>;
 }
 
+export interface RedisOpts {
+  port?: number;
+  host?: string;
+  db?: number;
+  password?: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -26,3 +33,4 @@ interface ComputerReportedBy extends reportedBy {
 }
 
 export type ReportedBy = HumanReportedBy | ComputerReportedBy;
+
