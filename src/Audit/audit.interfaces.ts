@@ -9,7 +9,10 @@ export interface APM {
 export interface AuditModuleOptions {
   debug?: boolean;
   logger?: Logger;
+  apm?: APM;
   environment: string;
+  database: EventRepository;
+  credentials: Record<string, string | number>;
 }
 
 export interface AuditModuleOptionsFactory {
@@ -24,13 +27,11 @@ export interface AuditModuleAsyncOptions
     ...args: any[]
   ) => Promise<AuditModuleOptions> | AuditModuleOptions;
   inject?: any[];
+  database: EventRepository;
 }
 
 export interface AuditOptions extends AuditModuleOptions {
-  database: EventRepository;
-  credentials: Record<string, string | number>;
   bufferSize?: number;
-  apm?: APM;
   interval?: number;
   redis?: RedisOpts;
 }

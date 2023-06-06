@@ -17,10 +17,11 @@ import { EVENT_REPOSITORY, AUDIT_OPTIONS } from '../Types/constants';
 @Injectable()
 export class AuditService implements OnModuleInit, OnModuleDestroy {
   private readonly logger: Logger;
+
   constructor(
     @Inject(AUDIT_OPTIONS) private options: AuditOptions,
     @Inject(EVENT_REPOSITORY) private eventRepository: EventRepository,
-     private readonly auditConsumer: AuditConsumer,
+    private readonly auditConsumer: AuditConsumer,
 ) {
     this.logger = options.logger ?? new Logger(AuditService.name);
   }
