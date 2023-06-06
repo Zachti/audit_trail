@@ -12,7 +12,7 @@ import { AuditConsumer } from '../AuditStorage/audit.consumer';
 import { TransactionData } from '../Types/transactionData.interface';
 import { v4 as uuidv4 } from 'uuid';
 import {AuditOptions } from './audit.interfaces';
-import { EVENT_REPOSITORY, AUDIT_OPTIONS, AUDIT_CONSUMER } from '../Types/constants';
+import { EVENT_REPOSITORY, AUDIT_OPTIONS } from '../Types/constants';
 
 @Injectable()
 export class AuditService implements OnModuleInit, OnModuleDestroy {
@@ -20,7 +20,7 @@ export class AuditService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(AUDIT_OPTIONS) private options: AuditOptions,
     @Inject(EVENT_REPOSITORY) private eventRepository: EventRepository,
-    @Inject(AUDIT_CONSUMER)private readonly auditConsumer: AuditConsumer,
+   private readonly auditConsumer: AuditConsumer,
 ) {
     this.logger = options.logger ?? new Logger(AuditService.name);
   }
